@@ -1,11 +1,7 @@
 import logging
 import asyncio
 import os
-from telegram import (
-    Update,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-)
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -44,7 +40,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def start_test_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    # Удаляем inline-клавиатуру из предыдущего сообщения
     try:
         await query.edit_message_reply_markup(reply_markup=None)
     except Exception:
@@ -100,7 +95,8 @@ async def handle_question2(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     selected = query.data
     if selected == "q2_a3":
         response_text = (
-            "Правильно, закупщик, имеющий несколько постоянных клиентов, уже может зарабатывать более 150 тысяч рублей в месяц — тому пример мои ученики.")
+            "Правильно, закупщик, имеющий несколько постоянных клиентов, уже может зарабатывать более 150 тысяч рублей в месяц — тому пример мои ученики."
+        )
     else:
         response_text = "Неправильно."
     await query.message.reply_text(response_text)
@@ -136,7 +132,7 @@ async def handle_question3(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await query.message.reply_text(response_text)
 
     # Ждем 3 секунды перед отправкой сообщения с вопросами о пользователе
-    await asyncio.sleep(3)
+    await asyncio.sleep(2)
     info_text = (
         "Прежде, чем я вышлю тебе первый урок — мне нужно узнать больше информации о тебе.\n\n"
         "Чтобы помочь человеку стартануть в закупах, я должен понимать, с чем он пришел.\n\n"
@@ -150,8 +146,8 @@ async def handle_question3(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     )
     await query.message.reply_text(info_text)
 
-    # Ждем 60 секунд, после чего отправляем сообщение с кнопкой для чек-листа
-    await asyncio.sleep(2)
+    # Ждем 60 секунд и отправляем сообщение с кнопкой для чек-листа
+    await asyncio.sleep(60)
     checklist_text = "ГОТОВО, КИДАЮ ЧЕК-ЛИСТ?"
     keyboard = InlineKeyboardMarkup(
         [[InlineKeyboardButton("ЧЕК-ЛИСТ", callback_data="send_checklist")]]
@@ -173,7 +169,23 @@ async def send_checklist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     checklist_file_path = "ЧекЛист.pdf"
     with open(checklist_file_path, "rb") as file:
         await query.message.reply_document(document=file, filename="checklist.pdf")
+
+    # Запускаем задачу по отправке отложенного сообщения через 60 секунд
+    asyncio.create_task(schedule_followup(query.message.chat.id, context))
     return ConversationHandler.END
+
+
+# Функция для отложенной отправки сообщения
+async def schedule_followup(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    await asyncio.sleep(60)
+    message_text = (
+        "Как тебе инфа? Получил пользу? Мне очень важно понимать, на сколько качественный продукт, "
+        "именно от тебя жду обратную связь в личку — @Rafael_Russia\n\n"
+        "Отправь 🔥, если инфа была полезна\n\n"
+        "Или 💩, если все уже знал\n\n"
+        "Всем тем, кто отписал — дам в подарок 5 секретных способов поиска клиента прямо на бесплатной консультации со мной."
+    )
+    await context.bot.send_message(chat_id=chat_id, text=message_text)
 
 
 # Обработчик команды /cancel для завершения диалога
@@ -186,8 +198,7 @@ def main() -> None:
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
     )
-    TOKEN = "7714280353:AAG5KcGM-jZRJN3cMhQOmQzBgsup9XTS8zY"
-  # либо укажите токен напрямую
+    TOKEN = "7714280353:AAG5KcGM-jZRJN3cMhQOmQzBgsup9XTS8zY"  # либо укажите токен напрямую
     application = Application.builder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
